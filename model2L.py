@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import math
+from sklearn.metrics import log_loss
 
 
 def relu(x) -> object:
@@ -96,7 +97,8 @@ def backwardProp(a, Y, x, w, m):
     dz3 = Y - a["a3"]
     dw3 = (1 / m) * np.dot(dz3, a["a2"].T)
     grads["dw3"] = dw3
-    #print("dw3.shape = ", dw3.shape)
+    da3_prev = -(np.divide(Y, a["a3"]) - np.divide((1 - Y), (1 - a["a3"])))
+    print("da3_prev = ", da3_prev.shape)
 
     db3 = (1 / m) * np.sum(dz3, axis=1, keepdims=True)
     grads["db3"] = db3
@@ -104,10 +106,12 @@ def backwardProp(a, Y, x, w, m):
     ##dz2 = np.where(a["a2"] > 0, 1, 0)
     ##dw2 = dz2 * a["a1"]
     ##grads["dw2"] = dw2
-    dz2 = np.multiply(np.dot(w["w3"], dz3), np.power(a["a2"], 2))
+    dz2 = np.multiply(np.multiply(np.dot(w["w3"], dz3), (1 - np.power(a["a2"], 2))), da3_prev)
+    print("dz2 ", dz2.shape)
     dw2 = (1 / m) * np.dot(dz2, a["a1"].T)
     #print("dw2.shape = ", dw2.shape)
     grads["dw2"] = dw2
+    da2_prev = np.dot(w["w2"], dz2)
 
     db2 = (1 / m) * np.sum(dz2, axis=1, keepdims=True)
     grads["db2"] = db2
@@ -115,7 +119,7 @@ def backwardProp(a, Y, x, w, m):
     # dz1 = np.where(a["a1"] > 0, 1, 0)
     # dw1 = dz1 * x
     # grads["dw1"] = dw1
-    dz1 = np.multiply(np.dot(w["w2"], dz2), np.power(a["a1"], 2))
+    dz1 = np.multiply(np.multiply(np.dot(w["w2"], dz2), (1 - np.power(a["a1"], 2))), da2_prev)
     dw1 = (1 / m) * np.dot(dz1, x.T)
     grads["dw1"] = dw1
 
@@ -158,8 +162,10 @@ def model(X, Y, learning_rate=0.001, iterations=10):
 
         a = forwardProp(X, Y, w, b)
         loss = crossEntropyLoss(a["a3"], Y, m)
+        losssk = log_loss(Y, a["a3"])
         grads = backwardProp(a, Y, X, w, m)
-        print("current loss is ", loss)
+        #print("current loss is ", loss)
+        print("current loss is ", losssk)
 
         w, b = updates(w, b, grads, learning_rate)
     #print(1)
