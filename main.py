@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     ##2 layer NN
 
-    pred = model(X, Y, iterations=100)
+    pred = model(X, Y, iterations=200, learning_rate=0.01)
     print("pred", pred.shape)
     pred = np.where(pred > 0.5, 1, 0).reshape(400)
     print('Accuracy of two layer NN: %d ' % float(
