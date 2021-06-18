@@ -35,3 +35,9 @@ if __name__ == "__main__":
     print('Accuracy of two layer NN: %d ' % float(
         (np.dot(Y, pred) + np.dot(1 - Y, 1 - pred)) / float(Y.size) * 100) +
           '% ' + "(percentage of correctly labelled datapoints)")
+
+    ##2 layer tanh and sigmoid
+    activations = ['tanh', 'sigmoid']
+    n_l = 3
+
+

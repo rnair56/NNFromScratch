@@ -95,7 +95,7 @@ def backwardProp(a, Y, x, w, m):
     """
     grads = {}
     dz3 = Y - a["a3"]
-    print("dz3", dz3.shape,"a[a2]",a["a2"].shape)
+    #print("dz3", dz3.shape,"a[a2]",a["a2"].shape)
     dw3 = (1 / m) * np.dot(dz3, a["a2"].T)
     grads["dw3"] = dw3
     #da3_prev = -(np.divide(Y, a["a3"]) - np.divide((1 - Y), (1 - a["a3"])))
@@ -137,7 +137,7 @@ def backwardProp(a, Y, x, w, m):
 def updates(W, b, grads, learning_rate):
 
     W["w3"] = W["w3"] - np.multiply(learning_rate, grads["dw3"].T)
-    print("W3 shape", W["w3"].shape, " grads w3", grads["dw3"].shape)
+    #print("W3 shape", W["w3"].shape, " grads w3", grads["dw3"].shape)
     W["w2"] = W["w2"] - learning_rate * grads["dw2"].T
     W["w1"] = W["w1"] - learning_rate * grads["dw1"].T
 
@@ -169,7 +169,7 @@ def model(X, Y, learning_rate=0.001, iterations=10):
         losssk = log_loss(Y, pred)
         grads = backwardProp(a, Y, X, w, m)
         #print("current loss is ", loss)
-        print("current loss is ", losssk)
+        #print("current loss is ", losssk)
 
         w, b = updates(w, b, grads, learning_rate)
     #print(1)
