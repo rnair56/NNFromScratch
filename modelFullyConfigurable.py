@@ -8,7 +8,7 @@ forward propagation
     -
 create the activation functions
  - backward mode - derivative of the activation fn
- -
+ - activations = [tanh, sigmoid] #2 hidden layers; total 3 layers including input
 """
 import numpy as np
 import pandas as pd
@@ -20,7 +20,8 @@ def initialize_layers(n_l, n_h):
     # n_h = [10, 4, 1]
     # n_l = 3
     for i in range(1, n_l):
-        w["w" + str(i)] = np.random.random((n_h[i - 1], n_h[i]))
+        #w["w" + str(i)] = np.random.random((n_h[i - 1], n_h[i]))
+        w["w" + str(i)] = np.random.rand(n_h[i - 1], n_h[i])
         b["b" + str(i)] = np.zeros((n_h[i], 1))
         ##cols has the no of samples
         # rows has the number of dims
@@ -57,28 +58,32 @@ def forward_propagation(w, b, X, n_l, activations):
     # z1 = np.dot(w["w" + str(1)].T, X) + b["b" + str(1)]
     # a = {"a1": activationSelect(z1, activations[0])}
     z = {}
-    cache = {"a1": X}
+    acache = {"a0": X}
 
     ## a1 done outside of loop
     ##w and b is indexed from range(1, n_l)
     for i in range(1, n_l):
-        z["z" + str(i)] = np.dot(w["w" + str(i)].T, a["a" + str(i)]) + b["b" + str(i)]
-        cache["a" + str(i)] = activationSelect(z["z" + str(i)], activations[i - 1])
-    return cache, cache["a" + str(n_l - 1)]
+        z["z" + str(i)] = np.dot(w["w" + str(i)].T, acache["a" + str(i - 1)]) + b["b" + str(i)]
+        acache["a" + str(i)] = activationSelect(z["z" + str(i)], activations[i - 1])
+    return acache, acache["a" + str(n_l - 1)]
 
 
-def backward_propagation(y, ypred, a, w, m, activations, loss="logLossgrad"):
+def backward_propagation(y, n_l, ypred, acache, w, m, activations, loss="logLossgrad"):
     dw = {}
     db = {}
     if loss == "logLossgrad":
-        daL = logLossgrad(y, ypred)
+        daprev = LogLossGrad(y, ypred)
 
     for i in reversed(range(1, n_l)):
-        ##n_l was sigmoid
-        dz = backprop(daL, a["a" + str(i)], activations[i - 1])
-        dw["dw" + str(i)] = np.multiply(dz, a["a" + str(i - 1)])
-        db["db" + str(i)] = (1 / m) * np.sum(dz, axis=1, keepdims=True)
-        daL = np.dot(w["w" + str(i)].T, dz)
+        # print(i)
+        dz = np.multiply(daprev, fprime(acache["a" + str(i)], activations[i - 1]))
+        # print("dz.shape = ", dz.shape)
+        # print("a shape = ", acache["a" + str(i - 1)].shape)
+        # print("w shape = ", w["w" + str(i)].shape)
+        dw["w" + str(i)] = np.dot(dz, acache["a" + str(i - 1)].T)
+        # print("dw shape = ", dw["w" + str(i)].shape)
+        db["b" + str(i)] = (1 / m) * np.sum(dz, axis=1, keepdims=True)
+        daprev = np.dot(w["w" + str(i)], dz)
 
     return dw, db
 
@@ -92,50 +97,47 @@ for every layer what are the common calcs
 """
 
 
-def backprop(daprev, a, act):
+def fprime(a, act):
     if act == "sigmoid":
-        return np.multiply(daprev, np.multiply(a, (1 - a)))
+        return np.multiply(a, (1 - a))
     elif act == "tanh":
-        return np.multiply(daprev, (1 - np.power(a, 2)))
+        return 1 - np.power(a, 2)
     elif act == "relu":
-        return daprev * 1
+        return 1
     else:
         return None
 
 
 def LogLossGrad(y, ypred):
-    return -(np.divide(y, ypred) - np.divide((1 - y), (1 - ypred)))
+    return -(np.divide(y, np.where(ypred == 0, np.power(10, 8), ypred)) - np.divide((1 - y), np.where((1 - ypred) == 0,
+                                                                                                      np.power(10, 8),
+                                                                                                      (1 - ypred))))
 
-def updates(W, b, grads, learning_rate):
+
+def updates(W, b, n_l, dw, db, learning_rate):
     for i in range(1, n_l):
-        W["w" + str(i)] = W["w" + str(i)] - np.multiply(learning_rate, grads["dw3"].T)
-
-
-    #print("W3 shape", W["w3"].shape, " grads w3", grads["dw3"].shape)
-    W["w2"] = W["w2"] - learning_rate * grads["dw2"].T
-    W["w1"] = W["w1"] - learning_rate * grads["dw1"].T
-
-    b["b1"] = b["b1"] - learning_rate * grads["db1"]
-    b["b2"] = b["b2"] - learning_rate * grads["db2"]
-    b["b3"] = b["b3"] - learning_rate * grads["db3"]
+        # print("W shape update", W["w" + str(i)].shape)
+        W["w" + str(i)] = W["w" + str(i)] - np.multiply(learning_rate, dw["w" + str(i)].T)
+        b["b" + str(i)] = b["b" + str(i)] - np.multiply(learning_rate, db["b" + str(i)])
     return W, b
 
-def modelFF(X, Y, n_h_i, n_l, activations, learning_rate=0.001, iterations=10):
-    n_h = [X.shape[0]]
-    n_h.append(n_h_i)
+
+def modelFF(X, Y, n_l, n_h, activations, learning_rate=0.01, iterations=10):
+    # n_h = [X.shape[0]]
+    # n_h.append(n_h_i)
 
     w, b = initialize_layers(n_l=n_l, n_h=n_h)
     m = X.shape[1]
 
     for i in range(0, iterations):
         cache, pred = forward_propagation(w, b, X, n_l, activations)
+        # print("length of acache is ", len(cache), cache.keys())
         # loss = crossEntropyLoss(a["a3"], Y, m)
-        pred = np.where(pred > 0.5, 1, 0)
+        #pred = np.where(pred > 0.5, 1, 0)
         ##losssk = log_loss(Y, pred)
-        dw, db = backward_propagation(Y, pred, cache, w, m, activations, loss="logLossgrad")
+        dw, db = backward_propagation(Y, n_l, pred, cache, w, m, activations, loss="logLossgrad")
 
-
-        w, b = updates(w, b, grads, learning_rate)
+        w, b = updates(w, b, n_l, dw, db, learning_rate)
     # print(1)
-    aPred = forwardProp(X, Y, w, b)
-    return aPred["a3"]
+    cache, predFinal = forward_propagation(w, b, X, n_l, activations)
+    return predFinal
