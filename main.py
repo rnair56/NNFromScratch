@@ -4,6 +4,7 @@ import planar_utils
 from planar_utils import plot_decision_boundary, sigmoid, load_planar_dataset, load_extra_datasets
 import matplotlib.pyplot as plt
 from model2L import forwardProp, backwardProp, sigmoid, relup, relu, model
+from modelFullyConfigurable import *
 
 if __name__ == "__main__":
     X, Y = load_planar_dataset()
@@ -37,7 +38,12 @@ if __name__ == "__main__":
           '% ' + "(percentage of correctly labelled datapoints)")
 
     ##2 layer tanh and sigmoid
-    activations = ['tanh', 'sigmoid']
-    n_l = 3
+    activations = ['tanh', 'tanh', 'sigmoid']
+    n_l = 4
+    n_h = [X.shape[0], 4, 2, 1]
+    pred = modelFF(X, Y, n_l, n_h, activations, learning_rate=0.005, iterations=2000)
 
-
+    pred = np.where(pred >= 0.5, 1, 0).reshape(400)
+    print('Accuracy of ', len(n_h) - 1, 'layer NN: %d ' % float(
+        (np.dot(Y, pred) + np.dot(1 - Y, 1 - pred)) / float(Y.size) * 100) +
+          '% ' + "(percentage of correctly labelled datapoints)")
